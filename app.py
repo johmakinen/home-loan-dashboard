@@ -43,7 +43,11 @@ def click_button():
 if 'clicked' not in st.session_state:
     st.session_state.clicked = False
 # Page configuration and styling
-st.set_page_config(page_title="Home Loan Calculator", layout="wide")
+st.set_page_config(
+    page_title="Home Loan Calculator",
+    page_icon="🏠",
+    layout="wide",
+)
 
 
 # Custom CSS for better styling
@@ -140,7 +144,7 @@ if url_to_apartment and st.session_state.clicked:
             apartment_info = get_apartment_info_st(url_to_apartment)
             st.session_state.known_apartments[url_to_apartment] = apartment_info
 
-        euribor = get_latest_euribor()
+        euribor = get_latest_euribor_st()
 
     if apartment_info:
         apartment_cost = apartment_info['Velaton hinta']
@@ -289,7 +293,9 @@ if url_to_apartment and st.session_state.clicked:
             .encode(
                 x=alt.X('Year:Q', title='Year'),
                 y=alt.Y('Remaining Balance:Q', title='Remaining Balance (€)'),
-                tooltip=['Year:Q', 'Remaining Balance:Q', 'Principal Payment:Q', 'Interest Payment:Q'],
+                tooltip=alt.Tooltip(
+                    ['Year:Q', 'Remaining Balance:Q', 'Principal Payment:Q', 'Interest Payment:Q'], format='.1f'
+                ),
             )
             .properties(width=800, height=400, title='Loan Amortization Schedule')
         )
@@ -306,7 +312,6 @@ else:
     st.info("Enter the apartment listing URL in the sidebar and click 'Calculate Loan' to get started.")
 
     # Sample demonstration when no URL is provided
-    st.markdown('<div class="info-box">', unsafe_allow_html=True)
     st.subheader("How to use this calculator")
     st.write(
         """
