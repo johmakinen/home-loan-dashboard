@@ -192,8 +192,6 @@ if url_to_apartment and st.session_state.clicked:
 
         with col2:
             st.subheader("Loan Information")
-            # st.markdown('<div class="info-box">', unsafe_allow_html=True)
-
             # Display in a more organized way
             data = {
                 "Description": [
@@ -286,21 +284,54 @@ if url_to_apartment and st.session_state.clicked:
 
         # Convert months to years for x-axis
         chart_data['Year'] = chart_data['Month'] / 12
+        # Keep only months >= 12
+        chart_data = chart_data[chart_data['Month'] >= 12]
 
         chart = (
             alt.Chart(chart_data)
-            .mark_line()
+            .mark_line(size=5)
             .encode(
-                x=alt.X('Year:Q', title='Year'),
-                y=alt.Y('Remaining Balance:Q', title='Remaining Balance (€)'),
-                tooltip=alt.Tooltip(
-                    ['Year:Q', 'Remaining Balance:Q', 'Principal Payment:Q', 'Interest Payment:Q'], format='.1f'
+                x=alt.X('Year:Q', title='Year', scale=alt.Scale(domain=[1, chart_data['Year'].max()])),
+                y=alt.Y(
+                    'Remaining Balance:Q',
+                    title='Remaining Balance (€)',
+                    axis=alt.Axis(values=list(range(0, int(lainamäärä) + 50000, 50000))),
                 ),
+                tooltip=alt.Tooltip(['Year:Q', 'Remaining Balance:Q'], format='.0f'),
+                color=alt.value('#7863A9'),
             )
-            .properties(width=800, height=400, title='Loan Amortization Schedule')
+            .properties(width=800, height=400)
+        )
+        df_bar = chart_data.copy()
+        df_bar = df_bar[df_bar['Month'] % 12 == 0]  # Show only yearly data
+        df_bar = df_bar[['Year', 'Principal Payment', 'Interest Payment']].melt(
+            id_vars=['Year'], value_vars=['Principal Payment', 'Interest Payment'], var_name='Payment Type'
         )
 
-        st.altair_chart(chart, use_container_width=True)
+        stacked_chart = (
+            alt.Chart(df_bar)
+            .mark_bar(size=20)
+            .encode(
+                x=alt.X('Year:Q', title='Year', scale=alt.Scale(domain=[1, df_bar['Year'].max()])),
+                y=alt.Y('value:Q', title='Payment (€)'),
+                color=alt.Color(
+                    'Payment Type:N',
+                    scale=alt.Scale(domain=['Principal Payment', 'Interest Payment'], range=['#1E88E5', '#FF5722']),
+                ),
+                tooltip=alt.Tooltip(['Year:Q', 'value:Q'], format='.1f'),
+            )
+            .properties(width=800, height=400)
+        )
+        combined_chart = (
+            alt.layer(
+                chart,
+                stacked_chart,
+            )
+            .resolve_scale(y='independent')
+            .configure_axis(grid=False)
+        )
+
+        st.altair_chart(combined_chart, use_container_width=True)
 
         # Raw data expander
         with st.expander("Property Raw Data", expanded=False):
