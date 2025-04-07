@@ -21,6 +21,7 @@ from src.utils import get_latest_euribor, get_apartment_info, plot_vakuus_tarve
 
 from collections import defaultdict
 
+
 if 'known_apartments' not in st.session_state:
     # Initialize the known_apartments dictionary in session state
     st.session_state.known_apartments = defaultdict()
@@ -48,7 +49,12 @@ st.set_page_config(
     page_icon="🏠",
     layout="wide",
 )
-
+# Add image top right corner of the page
+st.image(
+    "./src/assets/logo.png",
+    width=100,
+    output_format="auto",
+)
 
 # Custom CSS for better styling
 st.markdown(
@@ -245,15 +251,70 @@ if url_to_apartment and st.session_state.clicked:
                 f"{kuukausierä+vastike:,.0f} €",
                 delta=f"Loan {kuukausierä:,.0f} € + Maintenance {vastike:,.0f} €",
             )
-            # Additionals:
-            # These have add_ prefix in the apartment_info dict
-            if any(key.startswith("add_") for key in apartment_info):
-                st.markdown("<small><b>Additional Monthly Costs:</b></small>", unsafe_allow_html=True)
-                for key, value in apartment_info.items():
-                    if key.startswith("add_"):
-                        st.markdown(f"<small>• {key[4:]}: {value:,.0f} €</small>", unsafe_allow_html=True)
 
-        st.metric("Monthly Payment per Person (2 people), excl. additionals", f"{((kuukausierä+vastike)/2):,.0f} €")
+        # Vertical space for better layout
+        st.markdown("<br>", unsafe_allow_html=True)
+        payment_col21, payment_col22 = st.columns([2, 1])
+        with payment_col21:
+            # Additionals as a form with checkboxes
+            st.markdown("<h4>Additional Monthly Costs:</h4>", unsafe_allow_html=True)
+            additional_costs = {}
+            add_selections = {}
+            total_selected_additionals = 0
+            total_monthly = kuukausierä + vastike
+            # Extract all additional costs from apartment_info
+            for key, value in apartment_info.items():
+                if key.startswith("add_"):
+                    cost_name = key[4:]  # Remove the "add_" prefix
+                    additional_costs[cost_name] = value
+
+            if additional_costs:
+                with st.form(key="additional_costs_form"):
+                    st.markdown("<small>Select the additional costs to include:</small>", unsafe_allow_html=True)
+
+                    # Dictionary to store units for each cost
+                    cost_units = {}
+
+                    # Create a checkbox for each additional cost with unit input
+                    for cost_name, value in additional_costs.items():
+                        col_check, col_units = st.columns([3, 1])
+                        with col_check:
+                            add_selections[cost_name] = st.checkbox(
+                                f"{cost_name}: {value:,.0f} €/month/unit", key=f"checkbox_{cost_name}"
+                            )
+                        with col_units:
+                            if add_selections[cost_name]:
+                                cost_units[cost_name] = st.number_input(
+                                    "Units", min_value=1, value=1, key=f"units_{cost_name}"
+                                )
+                            else:
+                                cost_units[cost_name] = 1  # Default value
+
+                    submit_button = st.form_submit_button(label="Apply selected costs")
+
+                    # Calculate total of selected additional costs
+                    if submit_button or any(add_selections.values()):
+                        for cost_name, selected in add_selections.items():
+                            if selected:
+                                # Multiply cost by number of units
+                                units = cost_units[cost_name]
+                                cost_per_unit = additional_costs[cost_name]
+                                total_selected_additionals += cost_per_unit * units
+
+                    # Calculate total monthly payment including selected additionals
+                    total_monthly += total_selected_additionals
+
+        with payment_col22:
+            # Vertical space for better layout
+            st.markdown("<br>", unsafe_allow_html=True)
+            # Calculate per person cost (for 2 people)
+            st.metric(
+                "Total Monthly Payment, incl. selected costs",
+                f"{(total_monthly):,.0f} €/month",
+                delta=f"Loan {kuukausierä:,.0f} € + Maintenance {vastike:,.0f} € + Additional {total_selected_additionals:,.0f} €",
+            )
+            st.metric("Total Monthly Payment per Person", f"{(total_monthly/2):,.0f} €/month")
+
         st.markdown('</div>', unsafe_allow_html=True)
 
         # Amortization chart
