@@ -1,4 +1,4 @@
-![app_ui_image](./assets/app_ui_image.png)
+![app_ui_image](./src/assets/app_ui_image.png)
 
 # How it works
 1. Input an Oikotie link to an apartment
