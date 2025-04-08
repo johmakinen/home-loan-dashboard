@@ -41,14 +41,16 @@ def get_apartment_info(url_):
     response = requests.get(url_)
     soup = BeautifulSoup(response.text, 'html.parser')
     street_address = soup.find('meta', property='og:street-address')['content']
-    street_address
     price = soup.find('dt', string='Velaton hinta').find_next('dd').string
     price = float(re.sub(r'\D', '', price))
     vastike = soup.find('dt', string='Hoitovastike').find_next('dd').string
     vastike = vastike.replace(',', '.')
     vastike = float(re.sub(r'[^\d.,]', '', vastike))
     size = soup.find('dt', string='Asuinpinta-ala').find_next('dd').string
-    size = float(re.sub(r'\D', '', size))
+    size = size.replace(',', '.')
+    print('Size:', size)
+    size = float(re.sub(r'[^\d.,]', '', size))
+    print('Size float:', size)
     room_count = soup.find('dt', string='Huoneita').find_next('dd').string
     room_count = int(room_count)
     floor = soup.find('dt', string='Kerros')
