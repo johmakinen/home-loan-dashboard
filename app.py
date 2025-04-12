@@ -308,14 +308,22 @@ if url_to_apartment and st.session_state.clicked:
             # Vertical space for better layout
             st.markdown("<br>", unsafe_allow_html=True)
             # Calculate per person cost (for 2 people)
+            interest_payment = (lainamäärä * korko_yht)/12
+            loan_payment = (kuukausierä - interest_payment)
             st.metric(
                 "Total Monthly Payment, incl. selected costs",
                 f"{(total_monthly):,.0f} €/month",
-                delta=f"Loan {kuukausierä:,.0f} € + Maintenance {vastike:,.0f} € + Additional {total_selected_additionals:,.0f} €",
+                delta=f"Loan {kuukausierä:,.0f} (P:{loan_payment:,.0f}+I:{interest_payment:,.0f}) € + Maintenance {vastike:,.0f} € + Additional {total_selected_additionals:,.0f} €",
             )
             st.metric("Total Monthly Payment per Person", f"{(total_monthly/2):,.0f} €/month")
 
         st.markdown('</div>', unsafe_allow_html=True)
+
+        # waste = vastike+total_selected_additionals+(lainamäärä * korko_yht / 12)
+        # st.metric(
+        #     "Waste",
+        #     f"{waste:,.0f} €/month",
+        # )
 
         # Amortization chart
         st.subheader("Loan Amortization Chart")
